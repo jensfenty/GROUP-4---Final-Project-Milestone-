@@ -6,6 +6,7 @@ import 'screens/add_restroom_page.dart';
 import 'screens/map_page.dart';
 import 'screens/about_page.dart';
 import 'screens/profile_page.dart';
+import 'utils/slide_route.dart';
 
 void main() {
   runApp(const PottyPalApp());
@@ -36,13 +37,15 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedTab = 0;
+  int _currentTab = 0;
   int _selectedFilter = 0;
   String _searchQuery = '';
   final _searchController = TextEditingController();
+  final _pageController = PageController();
 
   @override
   void dispose() {
+    _pageController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -134,10 +137,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      body: IndexedStack(
-        index: _selectedTab,
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(),
         children: [
-          // Tab 0: Restroom List
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -256,17 +259,21 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          // Tab 1: Map
           const MapPage(),
-          // Tab 2: About
           const AboutPage(),
-          // Tab 3: Profile
           const ProfilePage(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedTab,
-        onTap: (i) => setState(() => _selectedTab = i),
+        currentIndex: _currentTab,
+        onTap: (i) {
+          setState(() => _currentTab = i);
+          _pageController.animateToPage(
+            i,
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeInOut,
+          );
+        },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFF1565C0),
         unselectedItemColor: Colors.grey,
@@ -289,7 +296,7 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const AddRestroomPage()),
+          slideRoute(page: const AddRestroomPage(), fromRight: true),
         ),
         backgroundColor: const Color(0xFF1565C0),
         child: const Icon(Icons.add, color: Colors.white),
@@ -308,8 +315,9 @@ class RestroomCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => RestroomDetailPage(restroom: restroom),
+        slideRoute(
+          page: RestroomDetailPage(restroom: restroom),
+          fromRight: true,
         ),
       ),
       child: Card(
@@ -532,9 +540,9 @@ class RestroomCard extends StatelessWidget {
                         child: OutlinedButton.icon(
                           onPressed: () => Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  RateRestroomPage(restroom: restroom),
+                            slideRoute(
+                              page: RateRestroomPage(restroom: restroom),
+                              fromRight: true,
                             ),
                           ),
                           icon: const Icon(Icons.star_outline, size: 16),
