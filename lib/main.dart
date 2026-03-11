@@ -1,4 +1,11 @@
 ﻿import 'package:flutter/material.dart';
+import 'models/restroom.dart';
+import 'screens/restroom_detail_page.dart';
+import 'screens/rate_restroom_page.dart';
+import 'screens/add_restroom_page.dart';
+import 'screens/map_page.dart';
+import 'screens/about_page.dart';
+import 'screens/profile_page.dart';
 
 void main() {
   runApp(const PottyPalApp());
@@ -19,34 +26,6 @@ class PottyPalApp extends StatelessWidget {
       home: const HomeScreen(),
     );
   }
-}
-
-class Restroom {
-  final Color imageColor;
-  final String imagePath;
-  final Alignment imageAlignment;
-  final String name;
-  final String address;
-  final String distance;
-  final double rating;
-  final int reviewCount;
-  final List<String> amenities;
-  final Color cardColor;
-  final bool isOpen;
-
-  Restroom({
-    required this.imageColor,
-    required this.imagePath,
-    this.imageAlignment = Alignment.center,
-    required this.name,
-    required this.address,
-    required this.distance,
-    required this.rating,
-    required this.reviewCount,
-    required this.amenities,
-    required this.cardColor,
-    required this.isOpen,
-  });
 }
 
 class HomeScreen extends StatefulWidget {
@@ -171,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(30),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.12),
+                        color: Colors.black.withValues(alpha: 0.12),
                         blurRadius: 8,
                         offset: const Offset(0, 3),
                       ),
@@ -278,53 +257,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           // Tab 1: Map
-          const Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.map_outlined, size: 64, color: Colors.blueGrey),
-                SizedBox(height: 16),
-                Text(
-                  'Restroom Map',
-                  style: TextStyle(fontSize: 18, color: Colors.blueGrey),
-                ),
-                SizedBox(height: 8),
-                Text('Coming soon', style: TextStyle(color: Colors.grey)),
-              ],
-            ),
-          ),
+          const MapPage(),
           // Tab 2: About
-          const Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.info_outline, size: 64, color: Colors.blueGrey),
-                SizedBox(height: 16),
-                Text(
-                  'About PottyPal',
-                  style: TextStyle(fontSize: 18, color: Colors.blueGrey),
-                ),
-                SizedBox(height: 8),
-                Text('Coming soon', style: TextStyle(color: Colors.grey)),
-              ],
-            ),
-          ),
+          const AboutPage(),
           // Tab 3: Profile
-          const Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.person_outline, size: 64, color: Colors.blueGrey),
-                SizedBox(height: 16),
-                Text(
-                  'Profile',
-                  style: TextStyle(fontSize: 18, color: Colors.blueGrey),
-                ),
-                SizedBox(height: 8),
-                Text('Coming soon', style: TextStyle(color: Colors.grey)),
-              ],
-            ),
-          ),
+          const ProfilePage(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -407,7 +344,7 @@ class RestroomCard extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.55),
+                          Colors.black.withValues(alpha: 0.55),
                         ],
                       ),
                     ),
@@ -647,7 +584,7 @@ class _StatCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -658,7 +595,7 @@ class _StatCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: color, size: 18),
@@ -718,7 +655,7 @@ class _FilterChipWidget extends StatelessWidget {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFF1565C0).withOpacity(0.3),
+                    color: const Color(0xFF1565C0).withValues(alpha: 0.3),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -734,28 +671,6 @@ class _FilterChipWidget extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _StarRating extends StatelessWidget {
-  final double rating;
-
-  const _StarRating({required this.rating});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (i) {
-        if (i < rating.floor()) {
-          return const Icon(Icons.star, color: Colors.amber, size: 16);
-        } else if (i < rating) {
-          return const Icon(Icons.star_half, color: Colors.amber, size: 16);
-        } else {
-          return const Icon(Icons.star_border, color: Colors.amber, size: 16);
-        }
-      }),
     );
   }
 }
@@ -786,71 +701,6 @@ class _AmenityChip extends StatelessWidget {
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       backgroundColor: Colors.white,
       side: const BorderSide(color: Color(0xFF1976D2), width: 0.8),
-    );
-  }
-}
-
-// ─── Restroom Detail Page ─────────────────────────────────────────────────
-
-class RestroomDetailPage extends StatelessWidget {
-  final Restroom restroom;
-  const RestroomDetailPage({super.key, required this.restroom});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1565C0),
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          restroom.name,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Rate & Review Page ───────────────────────────────────────────────────
-
-class RateRestroomPage extends StatelessWidget {
-  final Restroom restroom;
-  const RateRestroomPage({super.key, required this.restroom});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1565C0),
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          'Rate & Review',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Add New Restroom Page ────────────────────────────────────────────────
-
-class AddRestroomPage extends StatelessWidget {
-  const AddRestroomPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1565C0),
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          'Add New Restroom',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
     );
   }
 }
