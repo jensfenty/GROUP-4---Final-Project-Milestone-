@@ -42,6 +42,51 @@ class _HomeScreenState extends State<HomeScreen> {
   String _searchQuery = '';
   final _searchController = TextEditingController();
   final _pageController = PageController();
+  late List<Restroom> _restrooms;
+
+  @override
+  void initState() {
+    super.initState();
+    _restrooms = [
+      Restroom(
+        imageColor: const Color(0xFF0D47A1),
+        imagePath: 'assets/images/angeles-city-library.webp',
+        name: 'Angeles City Library',
+        address: 'Sto. Rosario St, Angeles City',
+        distance: '55 m away',
+        rating: 4.1,
+        reviewCount: 28,
+        amenities: ['Soap', 'Tissue', 'Lock', 'PWD'],
+        cardColor: const Color(0xFFE3F2FD),
+        isOpen: true,
+      ),
+      Restroom(
+        imageColor: const Color(0xFF1976D2),
+        imagePath: 'assets/images/singku.webp',
+        imageAlignment: const Alignment(0, -0.7),
+        name: 'Singku Cafe',
+        address: 'MacArthur Hwy, Angeles City',
+        distance: '120 m away',
+        rating: 3.8,
+        reviewCount: 14,
+        amenities: ['Bidet', 'Soap', 'Lock'],
+        cardColor: const Color(0xFFE3F2FD),
+        isOpen: true,
+      ),
+      Restroom(
+        imageColor: const Color(0xFF42A5F5),
+        imagePath: 'assets/images/sm-city-clark.webp',
+        name: 'SM City Clark',
+        address: 'Jose Abad Santos Ave, Clark',
+        distance: '340 m away',
+        rating: 4.6,
+        reviewCount: 87,
+        amenities: ['Bidet', 'Soap', 'Tissue', 'Lock', 'PWD'],
+        cardColor: const Color(0xFFE3F2FD),
+        isOpen: false,
+      ),
+    ];
+  }
 
   @override
   void dispose() {
@@ -49,46 +94,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchController.dispose();
     super.dispose();
   }
-
-  static final List<Restroom> _restrooms = [
-    Restroom(
-      imageColor: const Color(0xFF0D47A1),
-      imagePath: 'assets/images/angeles-city-library.webp',
-      name: 'Angeles City Library',
-      address: 'Sto. Rosario St, Angeles City',
-      distance: '55 m away',
-      rating: 4.1,
-      reviewCount: 28,
-      amenities: ['Soap', 'Tissue', 'Lock', 'PWD'],
-      cardColor: const Color(0xFFE3F2FD),
-      isOpen: true,
-    ),
-    Restroom(
-      imageColor: const Color(0xFF1976D2),
-      imagePath: 'assets/images/singku.webp',
-      imageAlignment: const Alignment(0, -0.7),
-      name: 'Singku Cafe',
-      address: 'MacArthur Hwy, Angeles City',
-      distance: '120 m away',
-      rating: 3.8,
-      reviewCount: 14,
-      amenities: ['Bidet', 'Soap', 'Lock'],
-      cardColor: const Color(0xFFE3F2FD),
-      isOpen: true,
-    ),
-    Restroom(
-      imageColor: const Color(0xFF42A5F5),
-      imagePath: 'assets/images/sm-city-clark.webp',
-      name: 'SM City Clark',
-      address: 'Jose Abad Santos Ave, Clark',
-      distance: '340 m away',
-      rating: 4.6,
-      reviewCount: 87,
-      amenities: ['Bidet', 'Soap', 'Tissue', 'Lock', 'PWD'],
-      cardColor: const Color(0xFFE3F2FD),
-      isOpen: false,
-    ),
-  ];
 
   List<Restroom> get _filtered {
     switch (_selectedFilter) {
@@ -294,10 +299,17 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          slideRoute(page: const AddRestroomPage(), fromRight: true),
-        ),
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            slideRoute(page: const AddRestroomPage(), fromRight: true),
+          );
+          if (result != null && result is Restroom) {
+            setState(() {
+              _restrooms.add(result);
+            });
+          }
+        },
         backgroundColor: const Color(0xFF1565C0),
         child: const Icon(Icons.add, color: Colors.white),
       ),
