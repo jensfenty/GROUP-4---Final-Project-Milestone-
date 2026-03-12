@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 
 class Restroom {
   final Color imageColor;
@@ -12,6 +13,14 @@ class Restroom {
   final List<String> amenities;
   final Color cardColor;
   final bool isOpen;
+
+  ImageProvider get imageProvider {
+  if (imagePath.startsWith('assets/')){
+    return AssetImage(imagePath);
+  } else {
+    return FileImage(File(imagePath));
+  }
+}
 
   Restroom({
     required this.imageColor,

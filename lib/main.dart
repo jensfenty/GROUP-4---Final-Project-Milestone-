@@ -254,15 +254,38 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               // Restroom cards
-              Expanded(
+               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.only(bottom: 100),
                   itemCount: filtered.length,
-                  itemBuilder: (context, index) =>
-                      RestroomCard(restroom: filtered[index]),
-                ),
-              ),
-            ],
+                  itemBuilder: (context, index) {
+                    final restroom = filtered[index];
+                    final restroomIndex = _restrooms.indexWhere((r) => identical(r, restroom));
+                    return RestroomCard(
+                      restroom: restroom,
+                      onTap: () async {
+                        final result = await Navigator.push<Object?>(
+                          context,
+                          slideRoute(
+                            page: RestroomDetailPage(restroom: restroom),
+                            fromRight: true,
+                          ),
+                        );
+                        if (!context.mounted) return;
+                        if (result == 'deleted') {
+                          setState(() {
+                            if (restroomIndex != -1) _restrooms.removeAt(restroomIndex);
+                          });
+                        } else if (result is Restroom) {
+                          setState(() {
+                            if (restroomIndex != -1) _restrooms[restroomIndex] = result;
+                          });
+                        }
+                      },
+                    );
+                  },
+                )
+          )],
           ),
           const MapPage(),
           const AboutPage(),
@@ -319,13 +342,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class RestroomCard extends StatelessWidget {
   final Restroom restroom;
+  final VoidCallback? onTap;
 
-  const RestroomCard({super.key, required this.restroom});
+  const RestroomCard({super.key, required this.restroom, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.push(
+      onTap: onTap ?? () => Navigator.push(
         context,
         slideRoute(
           page: RestroomDetailPage(restroom: restroom),
@@ -347,7 +371,7 @@ class RestroomCard extends StatelessWidget {
                   height: 170,
                   width: double.infinity,
                   child: Image(
-                    image: AssetImage(restroom.imagePath),
+                    image: restroom.imageProvider,
                     fit: BoxFit.cover,
                     alignment: restroom.imageAlignment,
                   ),

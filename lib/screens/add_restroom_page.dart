@@ -93,7 +93,7 @@ class _AddRestroomPageState extends State<AddRestroomPage> {
     if (_nameError == null && _addressError == null && _imagesError == null) {
       final newRestroom = Restroom(
         imageColor: const Color(0xFF1976D2),
-        imagePath: 'assets/images/singku.webp',
+        imagePath: _selectedImages.first.path,
         name: _nameController.text,
         address: _addressController.text,
         distance: '0 m away',

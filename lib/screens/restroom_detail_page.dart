@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/restroom.dart';
 import '../utils/slide_route.dart';
 import 'rate_restroom_page.dart';
+import 'edit_restroom_page.dart';
 
 class RestroomDetailPage extends StatelessWidget {
   final Restroom restroom;
@@ -35,6 +36,28 @@ class RestroomDetailPage extends StatelessWidget {
           ),
         ),
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () async{
+              final result = await Navigator.push<Object?>( 
+                context,
+                slideRoute(
+                  page: EditRestroomPage(restroom: restroom),
+                  fromRight: true,
+                ),
+              );
+              if (context.mounted) {
+                if (result == 'deleted') {
+                  Navigator.pop(context, 'deleted');
+                } else if (result is Restroom) {
+                  Navigator.pop(context, result);
+                }
+              }
+            },
+            icon: const Icon(Icons.edit_outlined, color: Colors.white),
+            tooltip: 'Edit Restroom',
+          )
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -44,7 +67,7 @@ class RestroomDetailPage extends StatelessWidget {
               height: 240,
               width: double.infinity,
               child: Image(
-                image: AssetImage(restroom.imagePath),
+                image: restroom.imageProvider,
                 fit: BoxFit.cover,
                 alignment: restroom.imageAlignment,
               ),
@@ -232,7 +255,7 @@ class RestroomDetailPage extends StatelessWidget {
                               color: Colors.grey.shade200,
                             ),
                             child: Image(
-                              image: AssetImage(restroom.imagePath),
+                              image: restroom.imageProvider,
                               fit: BoxFit.cover,
                               alignment: restroom.imageAlignment,
                             ),
