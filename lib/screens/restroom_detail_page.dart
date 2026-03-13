@@ -18,6 +18,8 @@ class RestroomDetailPage extends StatelessWidget {
     'Clean': Icons.cleaning_services,
     'Lock': Icons.lock,
     'Accessible': Icons.accessible,
+    'No Fee': Icons.money_off,
+    'Free': Icons.money_off,
   };
 
   @override
@@ -37,26 +39,27 @@ class RestroomDetailPage extends StatelessWidget {
         ),
         elevation: 0,
         actions: [
-          IconButton(
-            onPressed: () async {
-              final result = await Navigator.push<Object?>(
-                context,
-                slideRoute(
-                  page: EditRestroomPage(restroom: restroom),
-                  fromRight: true,
-                ),
-              );
-              if (context.mounted) {
-                if (result == 'deleted') {
-                  Navigator.pop(context, 'deleted');
-                } else if (result is Restroom) {
-                  Navigator.pop(context, result);
+          if (restroom.isUserAdded)
+            IconButton(
+              onPressed: () async {
+                final result = await Navigator.push<Object?>(
+                  context,
+                  slideRoute(
+                    page: EditRestroomPage(restroom: restroom),
+                    fromRight: true,
+                  ),
+                );
+                if (context.mounted) {
+                  if (result == 'deleted') {
+                    Navigator.pop(context, 'deleted');
+                  } else if (result is Restroom) {
+                    Navigator.pop(context, result);
+                  }
                 }
-              }
-            },
-            icon: const Icon(Icons.edit_outlined, color: Colors.white),
-            tooltip: 'Edit Restroom',
-          ),
+              },
+              icon: const Icon(Icons.edit_outlined, color: Colors.white),
+              tooltip: 'Edit Restroom',
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -182,6 +185,7 @@ class RestroomDetailPage extends StatelessWidget {
                                   'Clean',
                                   'Lock',
                                   'Accessible',
+                                  'No Fee',
                                 ].map((amenity) {
                                   final isAvailable = restroom.amenities.any(
                                     (a) =>

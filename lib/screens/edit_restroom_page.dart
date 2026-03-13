@@ -27,6 +27,7 @@ class _EditRestroomPageState extends State<EditRestroomPage> {
     'Clean',
     'Lock',
     'Accessible',
+    'No Fee',
   ];
 
   static const Map<String, IconData> _amenityIcons = {
@@ -38,6 +39,8 @@ class _EditRestroomPageState extends State<EditRestroomPage> {
     'Clean': Icons.cleaning_services,
     'Lock': Icons.lock,
     'Accessible': Icons.accessible,
+    'No Fee': Icons.money_off,
+    'Free': Icons.money_off,
   };
 
   @override
@@ -71,6 +74,7 @@ class _EditRestroomPageState extends State<EditRestroomPage> {
     final updated = Restroom(
       imageColor: widget.restroom.imageColor,
       imagePath: widget.restroom.imagePath,
+      imageBytes: widget.restroom.imageBytes,
       imageAlignment: widget.restroom.imageAlignment,
       name: _nameController.text.trim(),
       address: _addressController.text.trim(),
@@ -80,6 +84,7 @@ class _EditRestroomPageState extends State<EditRestroomPage> {
       amenities: _selectedAmenities.toList(),
       cardColor: widget.restroom.cardColor,
       isOpen: _isOpen,
+      isUserAdded: widget.restroom.isUserAdded,
     );
 
     Navigator.pop(context, updated);

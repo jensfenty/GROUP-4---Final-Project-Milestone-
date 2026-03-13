@@ -735,8 +735,13 @@ class _AmenityChip extends StatelessWidget {
     'Bidet': Icons.water_drop,
     'Soap': Icons.soap,
     'Tissue': Icons.receipt_long,
+    'Spacious': Icons.zoom_out_map,
+    'Clean': Icons.cleaning_services,
     'Lock': Icons.lock,
     'PWD': Icons.accessible,
+    'Accessible': Icons.accessible,
+    'No Fee': Icons.money_off,
+    'Free': Icons.money_off,
   };
 
   @override

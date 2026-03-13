@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import '../models/restroom.dart';
+
+enum _PhotoSource { camera, gallery }
+
+class _SelectedImage {
+  final String path;
+  final Uint8List bytes;
+
+  const _SelectedImage({required this.path, required this.bytes});
+}
 
 class AddRestroomPage extends StatefulWidget {
   const AddRestroomPage({super.key});
@@ -14,7 +24,7 @@ class _AddRestroomPageState extends State<AddRestroomPage> {
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
   final Set<String> _selectedAmenities = {};
-  final List<File> _selectedImages = [];
+  final List<_SelectedImage> _selectedImages = [];
   String? _nameError;
   String? _addressError;
   String? _imagesError;
@@ -29,6 +39,7 @@ class _AddRestroomPageState extends State<AddRestroomPage> {
     'Clean',
     'Lock',
     'Accessible',
+    'No Fee',
   ];
 
   static const Map<String, IconData> _amenityIcons = {
@@ -40,6 +51,8 @@ class _AddRestroomPageState extends State<AddRestroomPage> {
     'Clean': Icons.cleaning_services,
     'Lock': Icons.lock,
     'Accessible': Icons.accessible,
+    'No Fee': Icons.money_off,
+    'Free': Icons.money_off,
   };
 
   @override
@@ -49,7 +62,7 @@ class _AddRestroomPageState extends State<AddRestroomPage> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _pickFromCamera() async {
     if (_selectedImages.length >= 4) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -64,13 +77,16 @@ class _AddRestroomPageState extends State<AddRestroomPage> {
 
     try {
       final XFile? pickedFile = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
+        source: ImageSource.camera,
         imageQuality: 80,
       );
 
       if (pickedFile != null && mounted) {
+        final bytes = await pickedFile.readAsBytes();
         setState(() {
-          _selectedImages.add(File(pickedFile.path));
+          _selectedImages.add(
+            _SelectedImage(path: pickedFile.path, bytes: bytes),
+          );
           _imagesError = null;
         });
       }
@@ -83,6 +99,111 @@ class _AddRestroomPageState extends State<AddRestroomPage> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
+    if (_selectedImages.length >= 4) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Maximum 4 photos allowed'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+      return;
+    }
+
+    final remainingSlots = 4 - _selectedImages.length;
+
+    try {
+      final List<XFile> pickedFiles = await _imagePicker.pickMultiImage(
+        imageQuality: 80,
+      );
+
+      if (pickedFiles.isEmpty || !mounted) return;
+
+      final limitedFiles = pickedFiles.take(remainingSlots).toList();
+      final bytesList = await Future.wait(
+        limitedFiles.map((file) => file.readAsBytes()),
+      );
+
+      setState(() {
+        _selectedImages.addAll(
+          List.generate(
+            limitedFiles.length,
+            (index) => _SelectedImage(
+              path: limitedFiles[index].path,
+              bytes: bytesList[index],
+            ),
+          ),
+        );
+        _imagesError = null;
+      });
+
+      if (pickedFiles.length > remainingSlots && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Only $remainingSlots photo${remainingSlots == 1 ? '' : 's'} were added (max 4).',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showPhotoSourcePicker() async {
+    if (_selectedImages.length >= 4) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Maximum 4 photos allowed'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+      return;
+    }
+
+    final source = await showModalBottomSheet<_PhotoSource>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take Photo'),
+              onTap: () => Navigator.pop(ctx, _PhotoSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from Gallery'),
+              onTap: () => Navigator.pop(ctx, _PhotoSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted || source == null) return;
+
+    if (source == _PhotoSource.camera) {
+      await _pickFromCamera();
+    } else {
+      await _pickFromGallery();
     }
   }
 
@@ -107,6 +228,7 @@ class _AddRestroomPageState extends State<AddRestroomPage> {
       final newRestroom = Restroom(
         imageColor: const Color(0xFF1976D2),
         imagePath: _selectedImages.first.path,
+        imageBytes: _selectedImages.first.bytes,
         name: _nameController.text,
         address: _addressController.text,
         distance: '0 m away',
@@ -115,6 +237,7 @@ class _AddRestroomPageState extends State<AddRestroomPage> {
         amenities: _selectedAmenities.toList(),
         cardColor: const Color(0xFFE3F2FD),
         isOpen: true,
+        isUserAdded: true,
       );
 
       Navigator.pop(context, newRestroom);
@@ -138,6 +261,159 @@ class _AddRestroomPageState extends State<AddRestroomPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Photos',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  Text(
+                    '${_selectedImages.length}/4',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (_imagesError != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    _imagesError!,
+                    style: const TextStyle(fontSize: 12, color: Colors.red),
+                  ),
+                ),
+              _selectedImages.isEmpty
+                  ? GestureDetector(
+                      onTap: _showPhotoSourcePicker,
+                      child: Container(
+                        width: double.infinity,
+                        height: 160,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.grey.shade300,
+                            width: 1.5,
+                          ),
+                          color: Colors.grey.shade100,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.image_outlined,
+                              size: 48,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Add Photos',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : Column(
+                      children: [
+                        GridView.count(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: List.generate(
+                            _selectedImages.length,
+                            (index) => Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.memory(
+                                    _selectedImages[index].bytes,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: GestureDetector(
+                                    onTap: () => _removeImage(index),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.black.withValues(
+                                          alpha: 0.6,
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_selectedImages.length < 4)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: GestureDetector(
+                              onTap: _showPhotoSourcePicker,
+                              child: Container(
+                                width: double.infinity,
+                                height: _selectedImages.length == 1 ? 120 : 128,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                    width: 1.5,
+                                    style: BorderStyle.solid,
+                                  ),
+                                  color: Colors.grey.shade100,
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.add_photo_alternate_outlined,
+                                      size: 32,
+                                      color: Colors.grey.shade400,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Add More',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+              const SizedBox(height: 24),
               TextField(
                 controller: _nameController,
                 decoration: InputDecoration(
@@ -187,7 +463,7 @@ class _AddRestroomPageState extends State<AddRestroomPage> {
                   contentPadding: const EdgeInsets.all(14),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 28),
               const Text(
                 'Choose Present Amenities',
                 style: TextStyle(
@@ -275,159 +551,6 @@ class _AddRestroomPageState extends State<AddRestroomPage> {
                   );
                 },
               ),
-              const SizedBox(height: 28),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Photos',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  Text(
-                    '${_selectedImages.length}/4',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (_imagesError != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    _imagesError!,
-                    style: const TextStyle(fontSize: 12, color: Colors.red),
-                  ),
-                ),
-              _selectedImages.isEmpty
-                  ? GestureDetector(
-                      onTap: _pickImage,
-                      child: Container(
-                        width: double.infinity,
-                        height: 160,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.grey.shade300,
-                            width: 1.5,
-                          ),
-                          color: Colors.grey.shade100,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.image_outlined,
-                              size: 48,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Add Photos',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  : Column(
-                      children: [
-                        GridView.count(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 8,
-                          crossAxisSpacing: 8,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          children: List.generate(
-                            _selectedImages.length,
-                            (index) => Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.file(
-                                    _selectedImages[index],
-                                    fit: BoxFit.cover,
-                                    width: double.infinity,
-                                    height: double.infinity,
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 4,
-                                  right: 4,
-                                  child: GestureDetector(
-                                    onTap: () => _removeImage(index),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(2),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.black.withValues(
-                                          alpha: 0.6,
-                                        ),
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        if (_selectedImages.length < 4)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: GestureDetector(
-                              onTap: _pickImage,
-                              child: Container(
-                                width: double.infinity,
-                                height: _selectedImages.length == 1 ? 120 : 128,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.grey.shade300,
-                                    width: 1.5,
-                                    style: BorderStyle.solid,
-                                  ),
-                                  color: Colors.grey.shade100,
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.add_photo_alternate_outlined,
-                                      size: 32,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Add More',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.grey.shade600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
               const SizedBox(height: 28),
               SizedBox(
                 width: double.infinity,
